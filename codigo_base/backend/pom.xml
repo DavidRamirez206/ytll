@@ -13,9 +13,6 @@
 
     <groupId>com.icesi</groupId>
     <artifactId>studytrack-api</artifactId>
-    <!--
-        TODO
-    -->
     <version>1.0.0</version>
     <name>studytrack-api</name>
     <description>Backend REST de StudyTrack (Taller Evaluativo 2 - Ingeniería de Software V)</description>
@@ -59,10 +56,7 @@
         </plugins>
     </build>
 
-    <!--
-        ============================================================
-        TODO (Fase 2 - Publicación Inmutable en Nexus):
-    -->
+    <!-- Publicación inmutable en Nexus (Fase 2) -->
     <distributionManagement>
         <repository>
             <id>nexus-releases</id>

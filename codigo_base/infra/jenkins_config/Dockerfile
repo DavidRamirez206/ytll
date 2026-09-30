@@ -19,8 +19,9 @@ RUN apt-get update && \
     apt-get install -y docker-ce-cli docker-compose-plugin maven && \
     rm -rf /var/lib/apt/lists/*
 
-# Agregar jenkins al grupo docker del host (GID 999 es el habitual en Ubuntu)
-RUN groupadd -f -g 115 docker && usermod -aG docker jenkins
+# Agregar jenkins al grupo docker del host
+# GID real en este host: 973 (verificar con: getent group docker)
+RUN groupadd -f -g 973 docker && usermod -aG docker jenkins
 
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
