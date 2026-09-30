@@ -1,27 +1,16 @@
 // =============================================================================
 // Taller Evaluativo 2 - Fase 4: Pipeline Declarativo en Jenkins
-//
-// Complete los TODOs de cada etapa. Recuerde:
-//   - Prohibido el tag ":latest" al publicar en Nexus (empaquetamiento
-//     inmutable, Fase 2).
-//   - Las credenciales (usuario/clave de Nexus, token de GitHub) se
-//     inyectan mediante los IDs configurados en Jenkins > Credentials,
-//     NUNCA en texto plano dentro de este archivo.
+// Prohibido el tag :latest — tag inmutable = primeros 7 chars del SHA del commit
+// Las credenciales se inyectan por withCredentials, NUNCA en texto plano.
 // =============================================================================
 
 pipeline {
     agent any
 
     environment {
-        // TODO
-        IMAGE_TAG = "TODO-DEFINA-EN-UN-STAGE-SCRIPT"
-
-        // TODO
-        NEXUS_REGISTRY   = "TODO-HOST:TODO-PUERTO-DOCKER-REGISTRY"
-        NEXUS_MAVEN_REPO = "TODO-URL-REPOSITORIO-MAVEN-RELEASES"
-
-        // TODO
-        NEXUS_CREDENTIALS_ID = "TODO-ID-CREDENCIAL-NEXUS"
+        NEXUS_REGISTRY       = "localhost:5000"
+        NEXUS_CREDENTIALS_ID = "nexus-credentials"
+        APP_VERSION          = "1.0.0"
     }
 
     stages {
@@ -31,35 +20,76 @@ pipeline {
                 checkout scm
 
                 script {
-                    // TODO:
+                    // Tag inmutable = primeros 7 caracteres del SHA del commit
+                    env.IMAGE_TAG = sh(
+                        script: "git rev-parse --short=7 HEAD",
+                        returnStdout: true
+                    ).trim()
+                    echo "Tag de imagen inmutable: ${env.IMAGE_TAG}"
                 }
 
-                dir('backend') {
-                    // TODO
+                dir('codigo_base/backend') {
+                    sh 'mvn test -B --no-transfer-progress'
                 }
             }
         }
 
         stage('Package & Tag Inmutable') {
             steps {
-                dir('backend') {
-                    // TODO
+                dir('codigo_base/backend') {
+                    sh 'docker build -t "$NEXUS_REGISTRY/studytrack-api:$IMAGE_TAG" .'
                 }
-                dir('frontend') {
-                    // TODO:
+                dir('codigo_base/frontend') {
+                    sh 'docker build -t "$NEXUS_REGISTRY/studytrack-frontend:$IMAGE_TAG" .'
                 }
             }
         }
 
         stage('Publish to Nexus') {
             steps {
-                // TODO
+                withCredentials([usernamePassword(
+                    credentialsId: "${NEXUS_CREDENTIALS_ID}",
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASS'
+                )]) {
+                    // Push de imágenes Docker
+                    sh '''
+                        echo "$NEXUS_PASS" | docker login "$NEXUS_REGISTRY" -u "$NEXUS_USER" --password-stdin
+                        docker push "$NEXUS_REGISTRY/studytrack-api:$IMAGE_TAG"
+                        docker push "$NEXUS_REGISTRY/studytrack-frontend:$IMAGE_TAG"
+                        docker logout "$NEXUS_REGISTRY"
+                    '''
+
+                    // Deploy del JAR a Nexus con versión inmutable (1.0.0-<sha>)
+                    dir('codigo_base/backend') {
+                        sh '''
+                            mvn -B --no-transfer-progress versions:set \
+                              -DnewVersion="$APP_VERSION-$IMAGE_TAG" -DgenerateBackupPoms=false
+                            mvn -B --no-transfer-progress -s ci-settings.xml deploy -DskipTests
+                        '''
+                    }
+                }
             }
         }
 
         stage('Deploy & Smoke Test') {
             steps {
-                // TODO
+                dir('codigo_base/deploy') {
+                    // IMAGE_TAG ya está exportado como variable de entorno
+                    sh 'docker compose up -d'
+                    sh '''
+                        for i in $(seq 1 20); do
+                          if docker run --rm --network host curlimages/curl:8.8.0 -sf http://localhost:8082/tasks; then
+                            echo "Smoke test OK"
+                            exit 0
+                          fi
+                          echo "Esperando a la app ($i/20)..."
+                          sleep 5
+                        done
+                        docker compose logs
+                        exit 1
+                    '''
+                }
             }
         }
     }

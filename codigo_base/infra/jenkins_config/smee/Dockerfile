@@ -5,7 +5,4 @@
 FROM node:20-alpine
 
 RUN npm install -g smee-client
-
-# TODO
-
-ENTRYPOINT ["sh", "-c", "smee -u \"$SMEE_URL\" -t \"$SMEE_TARGET\""]
+ENTRYPOINT ["sh", "-c", "smee --url \"$SMEE_URL\" --target \"$TARGET_URL\""]

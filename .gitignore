@@ -1,1 +1,7 @@
 .DS_Store
+.idea/
+codigo_base/backend/target/
+codigo_base/frontend/dist/
+codigo_base/frontend/node_modules/
+codigo_base/frontend/tsconfig.tsbuildinfo
+*.bak

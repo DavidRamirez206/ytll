@@ -16,7 +16,7 @@
     <!--
         TODO
     -->
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>studytrack-api</name>
     <description>Backend REST de StudyTrack (Taller Evaluativo 2 - Ingeniería de Software V)</description>
 
@@ -63,5 +63,15 @@
         ============================================================
         TODO (Fase 2 - Publicación Inmutable en Nexus):
     -->
+    <distributionManagement>
+        <repository>
+            <id>nexus-releases</id>
+            <url>http://nexus:8081/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>nexus-snapshots</id>
+            <url>http://nexus:8081/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 </project>
